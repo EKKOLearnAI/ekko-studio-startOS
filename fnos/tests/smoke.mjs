@@ -17,7 +17,12 @@ const run = (action, overrides = {}) => execFileSync('bash', [control, action], 
 })
 const status = () => spawnSync('bash', [control, 'status'], { env }).status
 const base = 'http://127.0.0.1:18648'
-const post = (path, body, token) => fetch(base + path, {
+// Lifecycle commands synchronously stop/restart the server. Do not reuse an old
+// keep-alive socket while this test's event loop is blocked by those commands.
+const request = (path, options = {}) => fetch(base + path, {
+  ...options, signal: AbortSignal.timeout(10000), headers: { ...options.headers, Connection: 'close' },
+})
+const post = (path, body, token) => request(path, {
   method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
   body: JSON.stringify(body),
 })
@@ -41,8 +46,8 @@ try {
   assert.equal(Number(proc.match(/^Uid:\s+(\d+)/m)[1]), process.getuid())
   let token = await login(password)
   assert.equal((await post('/api/auth/login', { username: 'admin', password: '123456' })).status, 401)
-  assert.equal((await fetch(base + '/api/studio/files/read?path=probe.txt')).status, 401)
-  const api = (path, options = {}) => fetch(base + path, {
+  assert.equal((await request('/api/studio/files/read?path=probe.txt')).status, 401)
+  const api = (path, options = {}) => request(path, {
     ...options, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
   })
   assert.equal((await api('/api/studio/files/write', {
@@ -52,10 +57,10 @@ try {
   const runtime = await api('/api/hermes/runtime-versions?remote=false')
   assert.equal(runtime.status, 200)
   assert.equal(JSON.stringify(await runtime.json()).includes('managed-runtime'), false)
-  const socket = await fetch(base + '/socket.io/?EIO=4&transport=polling')
+  const socket = await request('/socket.io/?EIO=4&transport=polling')
   assert.equal(socket.status, 200)
   assert.ok((await socket.text()).startsWith('0'))
-  assert.equal((await fetch(base + '/')).status, 200)
+  assert.equal((await request('/')).status, 200)
   run('stop')
   assert.equal(status(), 3)
   // An unrelated live PID must neither count as our server nor be signalled.

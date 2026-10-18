@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { constants, copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -16,7 +16,7 @@ execFileSync(fnpack, ['build'], { cwd: stage, stdio: 'inherit' })
 const name = `ekko-studio_${report.version}_${report.platform}.fpk`
 const artifact = join(output, name)
 assert.ok(!existsSync(artifact), 'Refuse to overwrite an existing package')
-renameSync(join(stage, 'ekko-studio.fpk'), artifact)
+copyFileSync(join(stage, 'ekko-studio.fpk'), artifact, constants.COPYFILE_EXCL)
 const listing = execFileSync('tar', ['-tf', artifact], { encoding: 'utf8' }).trim().split('\n')
 assert.ok(listing.every(path => !path.startsWith('/') && !path.split('/').includes('..')))
 const inspection = mkdtempSync(join(tmpdir(), 'ekko-fpk-inspect-'))
