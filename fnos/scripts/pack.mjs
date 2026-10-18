@@ -22,11 +22,18 @@ assert.ok(listing.every(path => !path.startsWith('/') && !path.split('/').includ
 const inspection = mkdtempSync(join(tmpdir(), 'ekko-fpk-inspect-'))
 try {
   execFileSync('tar', ['-xf', artifact, '-C', inspection])
-  assert.equal(readFileSync(join(inspection, 'manifest'), 'utf8'), readFileSync(join(stage, 'manifest'), 'utf8'))
+  const parseManifest = path => Object.fromEntries(readFileSync(path, 'utf8').trim().split('\n').map(line => {
+    const index = line.indexOf('=')
+    return [line.slice(0, index).trim(), line.slice(index + 1).trim()]
+  }))
+  // fnpack normalizes spacing and adds the MD5 of app.tgz.
+  const { checksum, ...packagedManifest } = parseManifest(join(inspection, 'manifest'))
+  assert.deepEqual(packagedManifest, parseManifest(join(stage, 'manifest')))
   assert.equal(readFileSync(join(inspection, 'config/privilege'), 'utf8'), readFileSync(join(stage, 'config/privilege'), 'utf8'))
   assert.equal(readFileSync(join(inspection, 'cmd/main'), 'utf8'), readFileSync(join(stage, 'cmd/main'), 'utf8'))
   const payload = ['app.tgz', 'app.tar.gz', 'app.tar.xz'].find(name => existsSync(join(inspection, name)))
   assert.ok(payload, 'Expected the fnpack application archive')
+  assert.equal(checksum, createHash('md5').update(readFileSync(join(inspection, payload))).digest('hex'))
   const members = execFileSync('tar', ['-tf', join(inspection, payload)], { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 }).split('\n')
   assert.ok(members.some(name => name.replace(/^\.\//, '') === 'control.mjs'))
   assert.ok(members.some(name => name.replace(/^\.\//, '') === 'node/bin/node'))
