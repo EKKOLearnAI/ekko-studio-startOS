@@ -1,0 +1,30 @@
+FROM ubuntu:22.04@sha256:0a9887931b0e38af2e3487ed39e29436b0535c4f3f52e57745baaf79d1898956 AS build
+ARG TARGETARCH
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    ca-certificates curl git python3 make g++ binutils xz-utils bzip2 procps \
+    && rm -rf /var/lib/apt/lists/*
+COPY fnos/package-config.json /build-config.json
+RUN python3 -c 'import json; c=json.load(open("/build-config.json")); print(c["nodeVersion"])' > /node-version \
+    && case "$TARGETARCH" in amd64) echo x64;; arm64) echo arm64;; *) exit 1;; esac > /node-arch \
+    && curl --fail --location --retry 3 "https://nodejs.org/dist/v$(cat /node-version)/node-v$(cat /node-version)-linux-$(cat /node-arch).tar.xz" -o /node.tar.xz \
+    && python3 -c 'import json,hashlib; c=json.load(open("/build-config.json")); a=open("/node-arch").read().strip(); assert hashlib.sha256(open("/node.tar.xz","rb").read()).hexdigest()==c["nodeChecksums"][a]' \
+    && mkdir -p /opt/node && tar -xJf /node.tar.xz --strip-components=1 -C /opt/node
+ENV PATH=/opt/node/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+WORKDIR /source
+COPY .upstream/ /source/
+RUN node -e 'const c=require("/build-config.json"); if(require("./package.json").version!==c.sourceVersion) throw Error("Unexpected application version")' \
+    && npm ci --ignore-scripts --no-audit --no-fund \
+    && npm rebuild node-pty \
+    && npm run build \
+    && npm prune --omit=dev --no-audit --no-fund \
+    && npm run verify:sharp-runtime
+COPY fnos/ /wrapper/
+COPY LICENSE /wrapper/LICENSE
+RUN node /wrapper/scripts/stage.mjs /source /opt/node /payload "$(cat /node-arch)" \
+    && node /wrapper/scripts/verify.mjs /payload \
+    && node --test /wrapper/tests/control.test.mjs \
+    && groupadd --gid 1000 package-test && useradd --uid 1000 --gid 1000 --create-home package-test
+USER 1000:1000
+RUN node /wrapper/tests/smoke.mjs /payload
+FROM scratch
+COPY --from=build /payload /payload

@@ -1,0 +1,20 @@
+[
+  {
+    "stepTitle": "Ekko Studio 管理员",
+    "items": [
+      {
+        "type": "tips",
+        "helpText": "使用 admin 账户和下方设置的密码登录。应用监听 8648 端口，使用独立登录验证。Hermes 可在应用内单独下载安装。"
+      },
+      {
+        "type": "password",
+        "field": "wizard_admin_password",
+        "label": "管理员密码",
+        "rules": [
+          { "required": true, "message": "请设置管理员密码" },
+          { "min": 12, "max": 256, "message": "密码长度需为 12–256 个字符" }
+        ]
+      }
+    ]
+  }
+]

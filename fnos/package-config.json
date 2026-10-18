@@ -1,0 +1,12 @@
+{
+  "version": "0.7.36-2",
+  "sourceVersion": "0.7.36",
+  "sourceCommit": "1242ac63556491c92ba6dd49d89fd19c91a6bdd5",
+  "nodeVersion": "24.21.0",
+  "nodeChecksums": {
+    "x64": "fd8e59d5a511510f6a298afb548f18c7d2b1be404d8b4a27d94fbe49f56cb2d6",
+    "arm64": "6ad1325edbdb5649c379b75a237147a666c95d4f9ae8d340fef2d1575d289ad2"
+  },
+  "fnpackVersion": "1.2.3",
+  "fnpackLinuxX64Sha256": "54b97fa7b70968c4d05c79840f5daeff508957d0bb2062fdb0376d00d9615c93"
+}

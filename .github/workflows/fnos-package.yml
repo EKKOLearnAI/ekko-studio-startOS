@@ -1,0 +1,96 @@
+name: Build fnOS FPK
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'fnos/**'
+      - '.github/workflows/fnos-package.yml'
+permissions:
+  contents: read
+concurrency:
+  group: fnos-package-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    name: Native fnOS ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-22.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: EKKOLearnAI/ekko-studio
+          ref: 1242ac63556491c92ba6dd49d89fd19c91a6bdd5
+          path: .upstream
+          persist-credentials: false
+      - name: Check pinned upstream source
+        run: |
+          expected="$(python3 -c 'import json;print(json.load(open("fnos/package-config.json"))["sourceCommit"])')"
+          test "$(git -C .upstream rev-parse HEAD)" = "$expected"
+      - name: Build and test as non-root with native dependencies
+        run: docker build --progress=plain -f fnos/Dockerfile.build -t ekko-fnos-payload .
+      - name: Export verified payload
+        env:
+          FNOS_ARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          container="$(docker create ekko-fnos-payload /unused)"
+          trap 'docker rm --force "$container" >/dev/null' EXIT
+          mkdir -p output/payload
+          docker cp "$container:/payload/." output/payload/
+          printf '%s\n' "$GITHUB_SHA" > output/payload/wrapper-commit.txt
+          tar -czf "output/payload-$FNOS_ARCH.tar.gz" -C output/payload .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fnos-payload-${{ matrix.arch }}
+          path: output/payload-*.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+  package:
+    name: Assemble x86 and ARM FPKs
+    needs: build
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: fnos-payload-*
+          path: payloads
+      - name: Install checksum-pinned official fnpack
+        run: |
+          set -euo pipefail
+          version="$(node -p 'require("./fnos/package-config.json").fnpackVersion')"
+          checksum="$(node -p 'require("./fnos/package-config.json").fnpackLinuxX64Sha256')"
+          curl --fail --location --retry 3 "https://static2.fnnas.com/fnpack/fnpack-$version-linux-amd64" -o "$RUNNER_TEMP/fnpack"
+          printf '%s  %s\n' "$checksum" "$RUNNER_TEMP/fnpack" | sha256sum -c -
+          chmod +x "$RUNNER_TEMP/fnpack"
+      - name: Package and inspect actual FPK contents
+        run: |
+          set -euo pipefail
+          for arch in x64 arm64; do
+            mkdir -p "staged/$arch"
+            tar -xzf "payloads/fnos-payload-$arch/payload-$arch.tar.gz" -C "staged/$arch"
+            node fnos/scripts/pack.mjs "staged/$arch" release/fnos "$RUNNER_TEMP/fnpack"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fnos-fpk
+          path: release/fnos/*
+          if-no-files-found: error
+          retention-days: 14

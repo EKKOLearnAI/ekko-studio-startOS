@@ -1,0 +1,13 @@
+{
+  ".url": {
+    "ekko-studio.main": {
+      "title": "Ekko Studio",
+      "icon": "images/icon_{0}.png",
+      "type": "url",
+      "protocol": "http",
+      "port": "8648",
+      "url": "/",
+      "allUsers": false
+    }
+  }
+}
