@@ -30,7 +30,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: EKKOLearnAI/ekko-studio
-          ref: 1242ac63556491c92ba6dd49d89fd19c91a6bdd5
+          ref: 04e5d9aa75fa7008d4acfab6ee98bff6daa83e49
           path: .upstream
           persist-credentials: false
       - name: Check pinned upstream source

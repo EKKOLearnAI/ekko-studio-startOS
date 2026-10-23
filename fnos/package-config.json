@@ -1,7 +1,7 @@
 {
-  "version": "0.7.36-3",
-  "sourceVersion": "0.7.36",
-  "sourceCommit": "1242ac63556491c92ba6dd49d89fd19c91a6bdd5",
+  "version": "0.7.38-1",
+  "sourceVersion": "0.7.38",
+  "sourceCommit": "04e5d9aa75fa7008d4acfab6ee98bff6daa83e49",
   "nodeVersion": "24.22.1",
   "nodeChecksums": {
     "x64": "6c172a9ab6718f7b801fb5a7bd486af2ee5e32758086a04b84fcce2aa77095e6",
