@@ -1,5 +1,5 @@
 appname=ekko-studio
-version=0.7.36-2
+version=0.7.36-3
 display_name=Ekko Studio
 desc=自托管 AI Agent 工作台，支持对话、编码、MCP 工具和自动化工作流。使用安装时设置的 admin 密码登录，Hermes 运行时在应用内单独下载。由 EKKOLearnAI 维护和发布。
 source=thirdparty

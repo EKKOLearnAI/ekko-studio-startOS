@@ -37,7 +37,7 @@ as the fnOS package user.
 
 - Application ID, user and group: `ekko-studio`.
 - Developer and distributor: **EKKOLearnAI**.
-- Application version: `0.7.36`; FPK revision: `0.7.36-2`.
+- Application version: `0.7.36`; FPK revision: `0.7.36-3`.
 - Dedicated non-root package identity; root startup is refused.
 - Private Node runtime; no dependency on the fnOS Node application package.
 - Install wizard requires a 12–256 character password for username `admin`.

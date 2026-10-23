@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { configuration, main, processIdentity, serviceEnvironment } from '../app/control.mjs'
@@ -23,4 +24,13 @@ test('PID files cannot identify arbitrary or unrelated processes as the server',
 })
 test('root service operation is rejected before touching the filesystem', { skip: process.getuid() !== 0 }, async () => {
   await assert.rejects(main('start', { state: '/not-used' }), /non-root/)
+})
+
+test('FPK manifest and security runtime pins remain consistent', () => {
+  const c = JSON.parse(readFileSync(new URL('../package-config.json', import.meta.url)))
+  const manifest = readFileSync(new URL('../manifest', import.meta.url), 'utf8')
+  assert.ok(manifest.includes(`version=${c.version}\n`))
+  assert.equal(c.nodeVersion, '24.22.1')
+  assert.deepEqual(Object.keys(c.nodeChecksums).sort(), ['arm64', 'x64'])
+  for (const hash of Object.values(c.nodeChecksums)) assert.match(hash, /^[0-9a-f]{64}$/)
 })
