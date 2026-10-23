@@ -4,6 +4,10 @@
 
 # Ekko Studio on StartOS
 
+The independently maintained **fnOS / 飞牛 `.fpk` target** is in
+[`fnos/`](fnos/README.md), with its own **Build fnOS FPK** workflow and
+architecture-specific artifacts. The StartOS `.s9pk` wrapper is documented below.
+
 > Everything not listed in this document should behave the same as upstream
 > Ekko Studio. If a feature, setting, or behavior is not mentioned here,
 > the upstream documentation is accurate and fully applicable — see the

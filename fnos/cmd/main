@@ -1,0 +1,13 @@
+#!/bin/bash
+set -euo pipefail
+umask 077
+if [ "$(id -u)" = 0 ]; then
+    echo "Ekko Studio requires the non-root package user" >&2
+    exit 1
+fi
+: "${TRIM_APPDEST:?Missing application target}"
+: "${TRIM_PKGVAR:?Missing application state directory}"
+mkdir -p "$TRIM_PKGVAR"
+chmod 0700 "$TRIM_PKGVAR"
+exec flock -w 120 "$TRIM_PKGVAR/control.lock" \
+    "$TRIM_APPDEST/node/bin/node" "$TRIM_APPDEST/control.mjs" "$@"

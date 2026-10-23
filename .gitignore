@@ -6,3 +6,9 @@ node_modules/
 docker-images
 javascript
 ncc-cache
+.upstream/
+output/
+staged/
+payloads/
+release/
+*.fpk
